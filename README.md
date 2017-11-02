@@ -1,125 +1,53 @@
-# Spyscape Deception Interactive
+# Stateful View Transitions
 
-Spyscape Deception interactive exhibit game. Built with React and MobX.
+[This demo](https://wookee9.github.io/react-stateful-view-transitions) is an attempt to achieve animated view transitions in React in a way that overcomes many of the common problems associated with conventional approaches.
 
-## Usage
+The fundamental difference with this approach as compared to, for example React Transition Group, is that the __*state of the store and the state of the DOM always remain in sync*__ throughout the animation.
 
-```
-npm install
-npm run dll
-npm start
-```
-Wait for the bundle to build, then visit the URI supplied by webpack-dev-server in Chrome (usually localhost:8080).
+## Why does this matter?
 
-A typical URL with parameters would look like this:
+Typically, the way that route / view state are modelled in a React / Redux app is that you simply have a key that represents the current view. When you navigate to a new view, this key changes from `ViewA` to `ViewB`, and React responds by removing the `ViewA` component, and swapping it for the `ViewB` component.
 
-http://localhost:8080/?location=sshq&device_id=1&cam_orientation=landscape
+This all works just great until the designer decides to add some simple animations between the views. So you add in React CSS Transition Group. And all SEEMS to be well.
 
-Using the Facetracker requires you to allow the app access to your computer's webcam (when prompted on first run).
+But strange bugs start creeping in - props seem to be missing as views transition in and out. Actions get dispatched at strange times. And it all starts to get very confusing.
 
-## Continuous Integration
+The model of the view still thinks only one view is present in the DOM. But actually there are now multiple views in the DOM at any given moment. And each view can affect the state of the store.
 
-[Circle CI](https://circleci.com) is used to automatically test pull requests and merges on Github, and deploy the app to Amazon S3.
+You might try to prevent user interaction while the views are transitioning by using a CSS `pointer-events: none;` property. But of course this blocks the UI, so is far from ideal.
 
-#### Deployment
+Then you attempt to overcome this problem by ensuring that the outgoing view transition completes before mounting and beginning the incoming view's transition. Now what's in the DOM matches your model in the store.
 
-Once all tests have passed, the CI will deploy the build to the Amazon S3 buckets for staging and production environments.
+Then the designer asks for a transition where the incoming view starts to fade in while the outgoing view slides off to the left. But this is unfortunately impossible with your current routing model.
 
-Staging Builds are deployed to:
+## How this approach works
 
-https://deception-staging.spyscape.net
+To solve these problems, this prototype puts forward some slightly different ideas:
 
-*Note: we currently do not have a production bucket set up yet for Deception*
+- View transitions happen inside of the component's normal lifecycle.
+- One or more views / routes can be active in the DOM at any one time.
+- The current route key is treated as an eventual target, rather than the key that represents the only view present in the DOM.
+- Each view component is responsible for animating itself into and out of the DOM.
 
+It may seem odd to allow multiple views to be present in the DOM simultaneously. But this is exactly what is happening during a view transition, so to pretend that it isn't seems wrong. Modelling it accurately in the store has big benefits.
 
-#### Scratch Bucket
+A list of `activeViews` is maintained in the store. Views are allowed to persist in the store until they have completed their leaving animation. Once this has finished the view can be safely removed from the store, and the DOM. A `REMOVE_VIEW` action is dispatched, and the view is removed from the store's list of `activeViews`. This in turn causes a re-render in React with the new list of `activeViews`.
 
-Additionally, we also have a scratch bucket. Every time the CI receives a new SHA from Github, it will build and test the commit. If it passes, it will create a new directory on the scratch bucket matching the name of the short 7 character SHA, and then deploy the build to this folder. The build will then be available to view on the web.
+This is all achieved without special lifecycle hooks, 'frozen' components kept alive beyond their natural lifespan (eg React CSS Transition Group), Redux Thunk, or timeouts in action creators.
 
-This enables any build to quickly and easily be tested in the booth or through a web browser.
+This approach is also completely agnostic as to the animation technique used. These examples use CSS animations, CSS transitions (ViewA) and timeouts. But they could just as easily work with GSAP, React Motion, or something else.
 
-Scratch builds are deployed to:
+One clear benefit of using moving target, dynamic / physics JS based animations (such as React Motion), would be to make the animations fully interruptible in a graceful manor. With the CSS animations above, if they are interrupted before completing, they will abruptly stop, and then jump to the starting point for their exit animation, then play their exit animation. While this means the UI remains responsive, it is also pretty ugly!
 
-https://s3.amazonaws.com/deception-scratch.spyscape.net/builds/YOUR-GIT-SHA-HERE/index.html
+### Caveats / potential issues with this approach
 
-*!IMPORTANT NOTE: Because `location` is a reserved URL parameter name on Amazon S3, we have to use an alternative when accessing the app from a naked S3 bucket, as we are doing here. So as a workout, you can use `location_name` instead. Internally, the variable is still called as `location`.
+- I don't know if or how it will work with React Router (but I think it can probably be made to work with pattern matching).
+- Changes to the store must be made in the knowledge that other views might still be active in the DOM, therefore deleting a prop that another view needs might cause errors.
+- Actions dispatched within mount / unmount lifecycle hooks might not happen in the order you first think think they will. Instead, to guarantee sequential actions, the action would need to be dispatched before the outgoing view starts to transition out, or after all transitions have finished and the views have come to rest (hooks for this can be added).
 
-So, for example, a full URL with the necessary params might look like this:
+### To-dos
 
-https://s3.amazonaws.com/deception-scratch.spyscape.net/builds/4b103c6/index.html?location_name=sshq&device_id=1&cam_orientation=landscape
-
-## Testing
-
-Both unit tests and end-to-end tests are used in the app. The continuous integration system used requires all tests to pass in order for a deploy to S3 to be actioned. Furthermore, failing tests will also block merging onto the master branch on Github.
-
-Before raising a pull request on Github, ensure that all your tests pass.
-
-#### Unit tests
-
-```
-npm test
-```
-
-#### End-to-end tests
-
-These tests use [Nightmare.js](http://www.nightmarejs.org) to run the app in a Chromium browser, and simulate a 'happy path' user experience. The app includes lots of fixed-time sequences with no user interaction, so it takes a minimum of ~10 minutes to complete. Since this can quickly become a blocker when working on lots of smaller features, several shortcuts have been taken to speed up this testing time. Namely, these involve replacing the video files in the app with a dummy 1 second video file, and overriding all timeouts with a < 1 second value.
-
-To run the end-to-end tests in this fast mode:
-
-```
-npm run e2e:serve
-```
-
-**NOTE: This is the test that is run on the continuous integration system**
-
-
-You can still run the slower end-to-end tests with all the correct timeouts and video assets. If you are adding new video content or timeouts, you should run these tests locally and make sure they pass:
-
-```
-npm run e2e:serve-fast
-```
-
-### Game Events (Kinesis) and URL Parameters for device ID and location
-
-In the museum, there will be 12 booths, each running an instance of the app. In order for various other services such as the lights and the RFID readers to be able to communicate with each instance of the app, they need to know the physical location (eg the museum in New York, the office in London etc) of the app, and the device it's running on (eg booth 1, 2, 3...). The way this information is set in each each is through the use of URL parameters. Two parameters are used for these:
-
-**location** Sets the physical location of the app, eg `sshq`, `ssnyhq`.
-**device_id** The ID of the physical box the app is running on. This is an integer >= 1.
-
-An example of how this looks:
-
-http://localhost:8080/?location=sshq&device_id=1
-
-OR
-
-https://deception-staging.spyscape.net/?location=sshq&device_id=1
-
-### Camera Orientation
-
-The camera in the booth is mounted on it's side in a portrait orientation, to enable the user to be better framed. The app takes the incoming video feed and rotates it by 90 degrees in order to correct this. When developing or testing the app, you can override the default camera orientation by either changing the value in the config, or by providing a `cam_orientation` url parameter with a string value of `landscape` or `portrait`. See example below:
-
-http://localhost:8080/?location=sshq&device_id=1&cam_orientation=landscape
-
-### RFID Login
-
-Using the app with an MQTT RFID reader requires the app to be run with above-mentioned URL parameters. If these are absent, a connection to the MQTT server will not be made, and so the app will not be able to respond to the relevant MQTT events. However, the rest of the app will still function correctly.
-
-The location and instance ID must match the those assigned to the Arduino RFID reader.
-
-### Hardware IO
-
-Control of and by the hardware interface components in the installation uses an Arduino Leonardo which spoofs as a Midi USB device. This allows for driverless, plug-and play communication with Chrome via WebMidi. Simply plug the device in to an available USB port __then__ launch or refresh the app.
-
-The app will tolerate the device being un-plugged and plugged back in after it launches, however the device must be plugged back into the same port.
-
-### Use of getUserMedia and WebMidi requires a secure context in Chrome
-
-The app makes use of several advanced Chrome features. In order for these to be enabled, Chrome requires you to run the app in a secure context. This means either localhost via http, or remotely via https.
-
-Access to https://deception-staging.spyscape.net requires a connection to the Spyscape VPN, and the Spyscape Root SSL certificate to be installed on your machine. Speak to Dan Hart about this if you require access.
-
-### Facetracker
-
-The app uses a third-party commercial library to perform face recognition and tracking - [Beyond Reality Facetracker v4](http://beyond-reality-face.com).
-
-The version used in the app is currently a time-limited trial version. After 2 minutes, the facetracker will stop working, and you will have to refresh the app in order to use the facetracker any more. The library also makes a XHR request to the developer's server's to check the status of the user's licence on load, so this requires an internet connection.
+- Prevent multiple instances of the same view, by recycling an already active instance of that view. This means transitions have to be interruptible, so they can be told to about-turn and animate back in if already on it's way out.
+- Demonstrate how this might work with nested views
+- Demonstrate how this might work with 'proper' routing, eg React Router v4
+- Supply the incoming view with notification that the outgoing view's transition has finished. This would remove the need for hard-coded delays in many use cases, which can appear odd if you go from a view that exits very quickly to a view that has a long delay before it enters (ViewC).

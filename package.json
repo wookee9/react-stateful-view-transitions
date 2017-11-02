@@ -1,10 +1,12 @@
 {
-  "name": "spike-animation-demo",
+  "name": "spike-stateful-view-transitions",
   "version": "0.0.1",
-  "description": "Animation Demo",
+  "description": "A React view transition concept prototype",
   "main": "src/app.jsx",
   "scripts": {
-    "serve-hot": "webpack-dev-server --hot --inline --host 0.0.0.0",
+    "clean": "rm -rf docs/*",
+    "build": "npm run clean && webpack -p",
+    "serve-hot": "webpack-dev-server --config webpack.dev.config.js --hot --inline --host 0.0.0.0",
     "start": "npm run serve-hot"
   },
   "keywords": [
@@ -14,12 +16,12 @@
   "author": "Spyscape",
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/spyscape/spike-animation-demo.git"
+    "url": "git+ssh://git@github.com/spyscape/spike-stateful-view-transitions.git"
   },
   "bugs": {
-    "url": "https://github.com/spyscape/spike-animation-demo/issues"
+    "url": "https://github.com/spyscape/spike-stateful-view-transitions/issues"
   },
-  "homepage": "https://github.com/spyscape/spike-animation-demo#readme",
+  "homepage": "https://github.com/spyscape/spike-stateful-view-transitions#readme",
   "devDependencies": {
     "add-asset-html-webpack-plugin": "^1.0.2",
     "babel-cli": "^6.24.0",
@@ -47,6 +49,7 @@
     "eslint-plugin-react": "^6.10.0",
     "html-webpack-plugin": "^2.28.0",
     "node-sass": "^4.5.0",
+    "raw-loader": "^0.5.1",
     "react-addons-test-utils": "^15.4.2",
     "react-hot-loader": "^3.0.0-beta.6",
     "sass-loader": "^6.0.3",
@@ -57,9 +60,15 @@
   },
   "dependencies": {
     "es6-promise": "^4.1.0",
+    "lodash": "^4.17.4",
     "prop-types": "^15.5.10",
     "react": "^15.4.2",
     "react-css-transition": "^0.7.4",
-    "react-dom": "^15.4.2"
+    "react-dom": "^15.4.2",
+    "react-markdown": "^2.5.0",
+    "react-redux": "^5.0.6",
+    "redux": "^3.7.2",
+    "redux-devtools-extension": "^2.13.2",
+    "redux-thunk": "^2.2.0"
   }
 }

@@ -7,13 +7,12 @@ module.exports = {
   entry: {
     'app': [
       'babel-polyfill',
-      'react-hot-loader/patch',
       path.join(__dirname, './src/app.jsx'),
     ],
   },
   output: {
     filename: '[name].bundle.js',
-    path: path.resolve(__dirname, 'build'),
+    path: path.resolve(__dirname, 'docs'),
   },
   resolve: {
     extensions: ['.js','.jsx']
@@ -21,15 +20,16 @@ module.exports = {
   plugins: [
     new webpack.NamedModulesPlugin(),
     new HtmlWebpackPlugin({
-      title: 'Spyscape Codes',
+      title: 'Spike - Stateful View Transitions',
       template: './src/index.ejs',
     }),
   ],
-  devServer: {
-    disableHostCheck: true,
-  },
   module: {
     loaders: [
+      {
+        test: /\.md$/,
+        loader: 'raw-loader',
+      },
       {
         test: /\.ejs$/,
         loader: 'ejs-compiled-loader',

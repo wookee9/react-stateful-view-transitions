@@ -1,5 +1,95 @@
+@import './animations';
+
 body {
   color: black;
-  margin: 0;
-  font-family: "Helvetica"
+  margin: 1rem;
+  font-family: "Helvetica", sans-serif;
+  background: white;
+}
+
+p {
+  span {
+    background: whitesmoke;
+    line-height: 1;
+    margin: 0.2rem;
+    font-size: 0.7rem;
+  }
+  code {
+    font-size: 1.1rem;
+    background: whitesmoke;
+  }
+}
+
+ul {
+  padding-left: 1.5rem;
+}
+
+
+.views {
+  height: 200px;
+}
+
+.view {
+  display: block;
+  position: absolute;
+  width: 400px;
+  height: 200px;
+  transform-origin: center;
+  opacity: 0;
+
+  p {
+    margin: 0.5rem;
+  }
+
+  // &.enter {
+  //   animation: slideIn 1s 0.5s forwards;
+  // }
+}
+
+.viewA {
+  background: beige;
+  transform: translate(400px,0);
+  transition: transform 1s, opacity 1s;
+
+  &.enter {
+    // animation: fadeIn 1s 0.5s forwards;
+    transform: translate(0,0);
+    opacity: 1;
+  }
+  &.leave {
+    // animation: zoomOut 1s forwards;
+    transition-duration: 0.5s;
+  }
+}
+
+.viewB {
+  background: pink;
+  &.enter {
+    animation: riseIn 0.5s ease-in-out forwards;
+  }
+  &.leave {
+    animation: slideDownOut 2s forwards;
+  }
+}
+
+.viewC {
+  background: cyan;
+  transform-origin: top left;
+  &.enter {
+    animation: slideIn 1s 2s forwards;
+  }
+  &.leave {
+    animation: squashOut 0.5s forwards;
+  }
+}
+
+.viewD {
+  background: lavender;
+  transform-origin: center;
+  &.enter {
+    animation: slideIn 1s 0.5s forwards;
+  }
+  &.leave {
+    animation: spinOut 0.5s forwards;
+  }
 }
